@@ -42,29 +42,35 @@ graph TB
   end
 
   subgraph Pedagogy["📐 教学层 (Pedagogy Layer)"]
-    SYSTEM["system.md<br/>(苏格拉底引擎 & 叙事规则)"]
-    CURRICULUM["curriculum.md<br/>(课程结构 & 教材路径)"]
-    KNOWLEDGE["knowledge_points.md<br/>(知识点覆盖状态)"]
+    SYSTEM_CORE["system_core.md<br/>(~16KB 核心指令，始终加载)"]
+    SYSTEM_REF["system_reference.md<br/>(~7KB 参考指令，按需加载)"]
+    KP_DIR["knowledge_points/<br/>(按章拆分)"]
+    KP_OVERVIEW["overview.md<br/>(索引 + 更新规则)"]
+    KP_CH["ch{XX}.md<br/>(各章 LO 清单)"]
+    CURRICULUM["curriculum.md<br/>(延迟加载)"]
     LEARNER["learner_profile.md<br/>(学习者档案)"]
   end
 
   subgraph Narrative["📖 叙事层 (Narrative Layer)"]
-    STORY["story.md<br/>(世界观 & 序章)"]
-    PROGRESSION["story_progression.md<br/>(每课故事节点 & 情感阶段)"]
-    CHAR_RIN["rin.md"]
+    PROLOGUE["prologue.md<br/>(序章，仅首次加载)"]
+    STORY["story.md<br/>(世界观，始终加载)"]
+    SP_DIR["story_progression/<br/>(按章拆分)"]
+    SP_OVERVIEW["overview.md<br/>(总览 + 情感阶段)"]
+    SP_CH["ch{XX}_{name}.md<br/>(各章故事节点)"]
+    CHAR_RIN["rin.md<br/>(含隐喻空间规范)"]
     CHAR_RITSU["ritsu.md"]
     CHAR_SAKU["saku.md"]
   end
 
   subgraph Runtime["💾 运行时层 (Runtime Layer)"]
     PROGRESS["progress.md<br/>(学习进度)"]
-    SESSION["session_log.md<br/>(课堂摘要)"]
+    SESSION["session_log.md<br/>(含压缩规则)"]
     REVIEW["review_queue.md<br/>(间隔复习队列)"]
     MISTAKE["mistake_log.md<br/>(错题本)"]
-    DIARY["diary.md<br/>(学习者日记)"]
-    WECHAT["wechat_group.md<br/>(群聊完整记录)"]
+    DIARY["diary.md<br/>(含日记写法)"]
+    WECHAT["wechat_group.md<br/>(含群聊交互规则)"]
     UNREAD["wechat_unread.md<br/>(待查看未读消息)"]
-    TEMP["temp_math.md<br/>(临时数学推导)"]
+    TEMP["temp_math.md<br/>(含公式格式规则)"]
   end
 
   subgraph Materials["📚 教材层 (Materials)"]
@@ -72,13 +78,18 @@ graph TB
     WORKBOOK["练习册/<br/>(Markdown 练习册)"]
   end
 
-  CLAUDE -->|"第一步：必须加载"| SYSTEM & STORY & PROGRESSION & LEARNER & PROGRESS
-  CLAUDE -->|"第二步：按需加载"| REVIEW & CURRICULUM & KNOWLEDGE & WECHAT
-  CLAUDE -->|"第三步：延迟加载"| SESSION & MISTAKE & DIARY & UNREAD
+  KP_DIR --- KP_OVERVIEW & KP_CH
+  SP_DIR --- SP_OVERVIEW & SP_CH
 
-  SYSTEM -.->|"规则约束"| STORY & PROGRESSION
-  PROGRESSION -->|"决定当课老师"| CHAR_RIN & CHAR_RITSU & CHAR_SAKU
-  CURRICULUM -->|"映射教材路径"| TEXTBOOK & WORKBOOK
+  CLAUDE -->|"启动：必须加载"| SYSTEM_CORE & STORY & SP_OVERVIEW & LEARNER & PROGRESS
+  CLAUDE -.->|"首次启动额外"| PROLOGUE
+  CLAUDE -->|"课前：按需加载"| REVIEW & KP_CH & SP_CH & WECHAT
+  CLAUDE -->|"课中：即时加载"| WORKBOOK & TEMP
+  CLAUDE -->|"延迟：用到时才读"| SESSION & SYSTEM_REF & CURRICULUM
+
+  SYSTEM_CORE -.->|"规则约束"| STORY & SP_DIR
+  SP_OVERVIEW -->|"决定当课老师"| CHAR_RIN & CHAR_RITSU & CHAR_SAKU
+  KP_CH -->|"内嵌教材路径"| TEXTBOOK & WORKBOOK
 
   PROGRESS -.->|"课后写入"| SESSION & REVIEW & MISTAKE & DIARY
   WECHAT -.->|"课后生成"| UNREAD
@@ -89,32 +100,48 @@ graph TB
 ```
 SocraticNovel/                         # 框架根目录
 ├── CLAUDE.md                          # 🔑 系统入口（启动时序 + 容错机制）
+├── MAINTAINER.md                      # 📋 维护者手册（维护时读，教学时不读）
 ├── teacher/
-│   ├── story.md                       # 📖 世界观 + 序章（文笔标杆）
-│   ├── story_progression.md           # 📖 每课故事节点 + 情感阶段
+│   ├── prologue.md                    # 📖 序章（仅首次启动播放，文笔金标准）
+│   ├── story.md                       # 📖 世界观与人物设定（始终加载）
+│   │
+│   ├── story_progression/             # 📖 故事进度（按章拆分）
+│   │   ├── overview.md                #    总览 + 情感阶段指引（始终加载）
+│   │   ├── ch23_gauss.md ~ ch32_maxwell.md  # 各章故事节点（按需加载当课）
+│   │   ├── unit_tests.md              #    U1-U5 综合测验节点
+│   │   ├── exam_epilogue.md           #    模拟考 + 尾声
+│   │   └── appendix.md               #    暗线追踪 + 种子回收计划
+│   │
 │   ├── config/
-│   │   ├── system.md                  # 📐 系统总指令（苏格拉底规则 + 叙事规则 + 写作标准）
-│   │   ├── curriculum.md              # 📐 课程大纲 + 教材路径映射
-│   │   ├── knowledge_points.md        # 📐 知识点覆盖状态追踪
+│   │   ├── system_core.md             # 📐 核心指令（~16KB，始终加载）
+│   │   ├── system_reference.md        # 📐 参考指令（~7KB，按需加载）
+│   │   ├── curriculum.md              # 📐 课程大纲（延迟加载，路径已嵌入各章 KP 文件）
+│   │   ├── knowledge_points/          # 📐 知识点覆盖状态（按章拆分）
+│   │   │   ├── overview.md            #    章节索引 + 更新规则
+│   │   │   └── ch{XX}.md             #    各章 LO 清单（含教材/练习册路径）
 │   │   └── learner_profile.md         # 📐 学习者基本信息
 │   ├── characters/                    # 📖 角色文件（每人独立文件）
-│   │   ├── rin.md
+│   │   ├── rin.md                     #    含隐喻空间规范（规则嵌入头部）
 │   │   ├── ritsu.md
 │   │   └── saku.md
-│   └── runtime/                       # 💾 运行时状态（AI 读写）
+│   ├── reference/
+│   │   └── 幽鬼_prompt_v6_文笔标杆.md  #    文笔参照标杆
+│   └── runtime/                       # 💾 运行时状态（AI 读写，各文件头部含操作规则）
 │       ├── progress.md                #    学习进度 + 下节课排班
-│       ├── session_log.md             #    课堂摘要（150-200字/课）
-│       ├── session_archive.md         #    历史归档（压缩旧记录）
+│       ├── session_log.md             #    课堂摘要（头部含压缩归档规则）
+│       ├── session_archive.md         #    历史归档
 │       ├── review_queue.md            #    间隔复习队列
 │       ├── mistake_log.md             #    错题记录
-│       ├── temp_math.md               #    临时数学推导（每课清空）
-│       ├── diary.md                   #    学习者日记
-│       ├── wechat_group.md            #    群聊完整历史
+│       ├── temp_math.md               #    临时数学推导（头部含公式规则，每课清空）
+│       ├── diary.md                   #    学习者日记（头部含日记写法）
+│       ├── wechat_group.md            #    群聊完整历史（头部含群聊交互规则）
 │       └── wechat_unread.md           #    待查看消息
 └── materials/                         # 📚 教材资源
     ├── textbook/                      #    主教材（PDF）
     └── 练习册/                         #    练习题（Markdown）
 ```
+
+> **Context 优化成果**：通过文件分层拆分，启动时必须加载的 context 从 ~134KB 降至 ~54KB，**减少 60%**。这是整个文件架构重构的核心驱动力——在不丢失任何规则的前提下，将启动负载控制在 AI 上下文窗口的合理范围内。
 
 ---
 
@@ -126,42 +153,83 @@ SocraticNovel/                         # 框架根目录
 
 启动层解决一个关键问题：**如何让 AI 在每次新会话时，从"一无所知"到"完整记忆"？**
 
-Claude Code 的每次会话是无状态的——AI 不记得上次发生了什么。启动层的解决方案是**三级加载时序**：
+Claude Code 的每次会话是无状态的——AI 不记得上次发生了什么。启动层的解决方案是**四阶段加载时序**，按照课程生命周期精确控制每个文件的加载时机：
 
 ```mermaid
 sequenceDiagram
   participant AI as AI Agent
   participant Boot as CLAUDE.md
   participant Core as 核心文件
-  participant Runtime as 运行时文件
-  participant Lazy as 延迟加载文件
+  participant PreClass as 课前加载
+  participant InClass as 课中加载
+  participant Lazy as 延迟加载
 
   AI->>Boot: 每次新会话启动
-  Boot->>Core: 第一步：强制加载
-  Note over Core: system.md<br/>story.md<br/>story_progression.md<br/>learner_profile.md<br/>progress.md
-
-  Boot->>Runtime: 第二步：按需加载
-  Note over Runtime: review_queue.md<br/>当课老师角色文件<br/>当课教材<br/>curriculum.md<br/>knowledge_points.md<br/>wechat_group.md
-
-  Boot-->>Lazy: 第三步：延迟加载（用到时再读）
-  Note over Lazy: session_log.md<br/>mistake_log.md<br/>diary.md<br/>wechat_unread.md
+  Boot->>Core: 启动：强制加载（~54KB）
+  Note over Core: system_core.md (~16KB)<br/>story.md<br/>story_progression/overview.md<br/>learner_profile.md<br/>progress.md
 
   alt wechat_group.md 为空
-    AI->>AI: 首次启动 → 播放序章
+    AI->>AI: 首次启动 → 额外加载 prologue.md → 播放序章
   else wechat_group.md 有记录
     AI->>AI: 正常启动 → 进入课前流程
   end
+
+  Boot->>PreClass: 课前：按需加载
+  Note over PreClass: review_queue.md<br/>当课角色文件（含嵌入规则）<br/>story_progression/ch{XX}_{name}.md<br/>knowledge_points/ch{XX}.md<br/>教材章节<br/>wechat_group.md
+
+  Boot->>InClass: 课中：即时加载
+  Note over InClass: 练习册（做题时）<br/>temp_math.md（含公式规则）
+
+  Boot-->>Lazy: 延迟：用到时才读
+  Note over Lazy: session_log.md / session_archive.md<br/>system_reference.md<br/>story_progression/appendix.md<br/>unit_tests.md / curriculum.md
+```
+
+**加载时序完整视图**：
+
+```
+启动 → 必须加载：system_core.md, story.md, story_progression/overview.md,
+│       learner_profile.md, progress.md
+│       （首次启动额外加载：prologue.md）
+│
+├─ 课前 → 按需加载：review_queue.md, 当课角色文件,
+│         story_progression/ch{XX}_{name}.md,
+│         knowledge_points/ch{XX}.md, 教材章节,
+│         wechat_group.md
+│
+├─ 课中 → 即时加载：练习册, temp_math.md
+│
+├─ 课后 → 写入更新：progress.md, session_log.md,
+│         knowledge_points/ch{XX}.md, review_queue.md, mistake_log.md,
+│         wechat_unread.md, diary.md
+│
+└─ 延迟 → 用到时才读：session_archive.md, system_reference.md,
+           story_progression/appendix.md, unit_tests.md, curriculum.md
 ```
 
 **设计意图**：
 
-- **三级加载是 token 预算管理**。system.md (~35KB) + story_progression.md (~32KB) 已经占据大量上下文窗口，不能把所有文件一次性灌入。延迟加载确保 AI 只在需要时读取历史记录。
-- **首次启动检测靠 `wechat_group.md` 是否为空**。这比设置一个布尔标志更优雅——群聊记录的存在本身就是"故事已经开始"的证据。
+- **四阶段加载是 token 预算管理的核心策略**。通过将 `system.md`（~40KB）拆分为 `system_core.md`（~16KB，始终加载）+ `system_reference.md`（~7KB，按需加载），将 `story_progression.md`（~36KB）拆分为 `overview.md`（~4KB，始终加载）+ 各章文件（~1.5-2KB，按需加载当课），启动 context 从 ~134KB 降至 ~54KB，减少 60%。
+- **文件拆分不是简单的物理切割**。拆分的原则是"始终需要的规则"vs"当前课才需要的细节"——`system_core.md` 保留所有教学法铁律和角色声音速查，`system_reference.md` 存放情绪工具箱、教学法示范等参考材料。
+- **规则嵌入策略（策略 B）**：部分操作规则不放在独立文件中，而是嵌入 AI 已经会读的文件头部，确保被动获取、零额外加载成本。详见下方"规则嵌入分布"表。
+- **首次启动检测靠 `wechat_group.md` 是否为空**。群聊记录的存在本身就是"故事已经开始"的证据。`prologue.md` 从 `story.md` 中独立出来，仅首次启动加载，避免每次会话都浪费 token 在已播放过的序章上。
 - **课后更新容错机制**：如果会话在课后更新过程中中断，下次启动时 AI 会对比 `progress.md` 和 `session_log.md` 的最后一条记录，自动补全缺失的更新。
+
+#### 规则嵌入分布（策略 B）
+
+部分操作规则不设独立文件，而是嵌入在 AI 已经会读的文件头部。这种"搭便车"策略确保规则被被动获取，零额外加载成本：
+
+| 规则 | 嵌入位置 | 触发时机 |
+|------|---------|---------|
+| 隐喻空间规范 | `rin.md` 头部 | 凛的课加载角色文件时 |
+| 群聊交互规则 | `wechat_group.md` 头部 | 课前加载群聊时 / 生成群聊时 |
+| 日记写法 | `diary.md` 头部 | 课后写日记时 |
+| 数学公式处理 | `temp_math.md` 头部 | 课中写复杂推导时 |
+| 文件压缩规则 | `session_log.md` 头部 | 课后归档时 |
+| 情感阶段指引 | `story_progression/overview.md` | 启动时已加载 |
 
 ### 2.2 教学层 — 苏格拉底引擎
 
-**核心文件**：`system.md`、`curriculum.md`、`knowledge_points.md`
+**核心文件**：`system_core.md`（~16KB，始终加载）、`system_reference.md`（~7KB，按需加载）、`knowledge_points/ch{XX}.md`（按章加载）
 
 教学层是系统的**最高优先级**。无论叙事有多精彩，如果苏格拉底教学法执行不到位，系统就失去了存在的意义。
 
@@ -185,14 +253,44 @@ graph LR
 | **岔题是机会** | 学习者问"库仑是谁"，先追深再绕回 | 岔路往往是最好的切入口 |
 | **禁止生硬转场** | 不说"好，回到刚才……"，用问题过渡 | 保持对话的自然流动感 |
 
+#### 教学法硬性防护栏
+
+以下规则经实战测试发现 AI 最容易违反，已写入 `system_core.md` 并作为不可放松的硬限制：
+
+| 硬性规则 | 为什么存在 |
+|----------|-----------|
+| **一次回复最多一个新概念** | AI 天然倾向于在一轮里讲完整个推导链，学生跟不上 |
+| **禁止理解确认结尾**（"你跟上了吗？""明白了吗？"） | 这是讲课模式的标志。正确做法是以引导发现的问题结尾 |
+| **整个教学过程禁用学生没学过的术语** | 不只是开局——中途蹦出"法向分量""切向分量"也会卡住学生 |
+| **超纲是鼓励的，按角色性格回话** | AI 遇到超纲问题倾向于敷衍打发或变成通用讲师。规则要求认真回答且保持角色声音 |
+| **学生岔题不管多偏，先顺着追深一层** | AI 会把学生的好奇心误判为"逃避课堂"然后强行拉回正题 |
+| **每课规划 1-2 个教学陷阱** | 主动检验学生是否真懂，而不是等他做题才发现没理解 |
+
+教学陷阱包括：诱导性的错误问题、故意先教笨办法再让学生发现更优解、设置隐含条件让学生得出伪结论再自己推翻。课后 `session_log.md` 记录陷阱结果（踩了 / 没踩 / 部分踩）和下节课密度建议。
+
+#### 课前准备清单
+
+课前准备已从 8 步扩展至 10 步，新增两个关键环节：
+
+```
+Step 1-8: [原有步骤] 读 progress → 确认章节 + 老师 → 读 review_queue →
+          读 knowledge_points/ch{XX} → 读角色文件 → 读 story_progression 当课条目 →
+          读教材章节 → 读 wechat_group 生成"今天的状态"
+Step 9:   规划超纲拓展素材（深层联系 / 科学史 / 跨学科应用）
+Step 10:  规划 1-2 个教学陷阱（诱导性错误 / 笨办法先行 / 隐含条件伪结论）
+→ 输出内部准备清单（不展示给学习者）
+```
+
 #### 知识点追踪系统
 
-`knowledge_points.md` 为每个知识点维护三种状态：
+`knowledge_points/` 目录按章拆分为独立文件，每个 `ch{XX}.md` 文件为对应章节的知识点维护三种状态：
 - `[ ]` — 未覆盖
 - `[~]` — 部分覆盖
 - `[x]` — 已掌握
 
-每节课前，AI 扫描当前章节的未覆盖知识点，生成"漏洞清单"。教学中不宣布漏洞——把它们藏在苏格拉底提问的路径中，自然带出。
+每个章节 KP 文件的头部嵌入了该章节对应的教材和练习册路径，使得 `curriculum.md` 可以降级为延迟加载——AI 在读取当课 KP 文件时就能获得所需的教材路径。`knowledge_points/overview.md` 提供全课程的章节索引和更新规则。
+
+每节课前，AI 扫描当课章节的 `ch{XX}.md` 中未覆盖知识点，生成"漏洞清单"。教学中不宣布漏洞——把它们藏在苏格拉底提问的路径中，自然带出。
 
 #### 双轨掌握度评估
 
@@ -216,7 +314,7 @@ graph LR
 
 ### 2.3 叙事层 — 文学引擎
 
-**核心文件**：`story.md`、`story_progression.md`、`characters/*.md`
+**核心文件**：`prologue.md`（序章，仅首次）、`story.md`（世界观）、`story_progression/`（按章拆分）、`characters/*.md`
 
 叙事层是 SocraticNovel 区别于所有其他 AI 教学系统的核心差异。它不是"润色"——它是整个体验的质地。
 
@@ -259,13 +357,13 @@ graph LR
 
 系统中散布的暗线种子（角色的过去碎片、环境中的象征物件、未说完的话）不要求全部回收。有些种子只是让世界更厚——它们存在本身就够了。
 
-每颗种子在 `story_progression.md` 中有明确的收割窗口或"开放/不强制回收"标记。维护者可以通过暗线种子回收计划表查看所有种子的状态。
+每颗种子在 `story_progression/` 各章文件中有明确的收割窗口或"开放/不强制回收"标记。维护者可以通过 `story_progression/appendix.md` 中的暗线种子回收计划表查看所有种子的状态。
 
 #### 呼吸空间原则
 
 **不是每堂课都需要情绪高潮。**
 
-`story_progression.md` 为每课安排了故事节点，但那是**上限，不是任务清单**。如果一堂课的苏格拉底对话进展顺畅，情绪事件可以降级为背景细节甚至跳过。
+`story_progression/` 各章文件为每课安排了故事节点，但那是**上限，不是任务清单**。如果一堂课的苏格拉底对话进展顺畅，情绪事件可以降级为背景细节甚至跳过。
 
 安静课的作用：让读者在两次情绪峰值之间喘气。安静课里发生的不是"什么都没有"——是日常：吃饭、走路、物件的位置变了。这些日常在不知不觉中积累重量。
 
@@ -319,10 +417,10 @@ SocraticNovel 的解决方案：**把记忆外化为文件系统。**
 graph TB
   subgraph SingleLesson["单课完整数据流"]
     direction TB
-    PRE["课前<br/>读取 progress.md<br/>读取 review_queue.md<br/>读取 knowledge_points.md<br/>清空 temp_math.md<br/>生成角色今日状态"]
-    TRANS["过渡场景<br/>（200-500字叙述）"]
+    PRE["课前<br/>读取 progress.md<br/>读取 review_queue.md<br/>读取 knowledge_points/ch{XX}.md<br/>清空 temp_math.md<br/>生成角色今日状态<br/>规划拓展素材 + 教学陷阱"]
+    TRANS["过渡场景<br/>（2-4句叙述）"]
     TEACH["课中教学<br/>苏格拉底问答<br/>穿插叙事<br/>随堂练习"]
-    POST["课后更新<br/>写入 8 个文件"]
+    POST["课后更新<br/>写入 7+ 个文件"]
 
     PRE --> TRANS --> TEACH --> POST
   end
@@ -330,13 +428,12 @@ graph TB
   subgraph PostUpdate["课后写入清单"]
     direction TB
     W1["progress.md ← 本课记录"]
-    W2["session_log.md ← 课堂摘要"]
+    W2["session_log.md ← 课堂摘要（含陷阱结果：踩了/没踩/部分踩）"]
     W3["review_queue.md ← 新增薄弱点"]
     W4["mistake_log.md ← 错题"]
-    W5["角色文档 ← 态度更新 + 记忆追加"]
+    W5["knowledge_points/ch{XX}.md ← 覆盖状态"]
     W6["diary.md ← 当天日记"]
     W7["wechat_unread.md ← 课后群聊"]
-    W8["knowledge_points.md ← 覆盖状态"]
   end
 
   POST --> PostUpdate
@@ -347,14 +444,15 @@ graph TB
 | 文件 | 读取时机 | 写入时机 | 生命周期 |
 |------|----------|----------|----------|
 | `progress.md` | 每课启动 | 每课课后 | 永久累积 |
-| `session_log.md` | 回顾历史时 | 每课课后 | 永久累积 |
+| `session_log.md` | 回顾历史时（头部含压缩规则） | 每课课后（含陷阱结果） | 永久累积 |
 | `session_archive.md` | 查早期历史时 | 归档时 | 永久累积 |
 | `review_queue.md` | 每课启动 | 每课课后 | 条目有生命周期（掌握后移除） |
 | `mistake_log.md` | 需要时 | 答错时 | 永久累积 |
-| `temp_math.md` | 写入后立即引用 | 复杂推导时 | **单课寿命**（下课清空） |
-| `diary.md` | 写日记时 | 晚上 9:30 后 | 永久累积 |
-| `wechat_group.md` | 每课启动 | 每课课后 | 永久累积（超 100 条压缩） |
+| `temp_math.md` | 写入后立即引用（头部含公式规则） | 复杂推导时 | **单课寿命**（下课清空） |
+| `diary.md` | 写日记时（头部含日记写法） | 晚上 9:30 后 | 永久累积 |
+| `wechat_group.md` | 每课启动（头部含群聊交互规则） | 每课课后 | 永久累积（超 100 条压缩） |
 | `wechat_unread.md` | 学习者说"看看微信" | 每课课后 | **单次寿命**（查看后清空） |
+| `knowledge_points/ch{XX}.md` | 课前（当课章节） | 课后（标记已覆盖） | 永久累积 |
 
 #### 群聊系统
 
@@ -370,13 +468,14 @@ graph TB
 
 #### 防漂移机制
 
-每 5 课执行一次内部校准检查：
-- 叙事红线是否被违反？
-- 角色声音是否偏移？
-- 情感阶段是否和实际进度匹配？
-- 知识点覆盖是否有遗漏？
+长对话中 AI 会逐渐遗忘初始规则。用户可通过 `/校准` 或 `/check` 命令触发校准：
 
-这是 SocraticNovel 对 AnimaTutor "周期性自省校准波"设计的继承和本地化。
+1. **重新读取 `system_core.md`**（刷新注意力权重）
+2. **逐条对照**当前行为与规则
+3. **完全静默**——不输出校准报告，以角色内叙事动作恢复对话
+4. **校准结果记入下节课准备清单**（不即时展示）
+
+与旧版"每 5 课自动校准"不同，新版改为**用户触发**——这更符合实际使用节奏：用户感知到 AI 行为偏移时主动触发，比固定间隔更精准。校准命令的存在本身也是一种提醒机制——用户知道有这个工具，就会更注意观察 AI 的行为一致性。
 
 ---
 
@@ -384,13 +483,15 @@ graph TB
 
 ### 为什么用多文件而不是单 Prompt？
 
-**原因：对抗上下文稀释。**
+**原因：对抗上下文稀释 + 控制启动成本。**
 
 单文件 prompt 在聊天十几轮后，早期的设定会被注意力机制自然遗忘。多文件方案的优势：
 1. **按需加载** — 不把全部状态塞进上下文窗口
 2. **持久化存储** — 文件系统不受会话重启影响
 3. **模块化维护** — 修改角色不需要碰教学规则
 4. **可审计** — 每个文件都有明确职责，可以独立检查
+5. **分层拆分** — 将大文件按"始终需要 vs 按需加载"拆分（如 `system.md` → `system_core.md` + `system_reference.md`），启动 context 从 ~134KB 降至 ~54KB，减少 60%
+6. **规则嵌入** — 操作规则嵌入已加载文件头部（策略 B），零额外 token 成本
 
 ### 为什么三个老师而不是一个？
 
@@ -474,13 +575,14 @@ SocraticNovel 可以视为 AnimaTutor 理念的下一代实现。以下是关键
 | **运行平台** | 知识库平台（Claude Projects, ChatGPT, Kimi） | Claude Code（本地文件系统读写） |
 | **角色数量** | 单角色 | 1-3 位教师轮值 |
 | **状态管理** | HTML 注释隐藏沙盒 + 模型自我覆写 | 真正的文件系统 I/O（持久化、可审计） |
-| **文件数量** | 8+1（BOOT + 8 模块） | 15+（启动 + 教学 + 叙事 + 运行时 + 教材） |
-| **教学方法** | 教学融入叙事（被动） | 苏格拉底教学法（主动引导推导） |
+| **文件数量** | 8+1（BOOT + 8 模块） | 20+（启动 + 教学 + 叙事 + 运行时 + 教材，含按章拆分目录） |
+| **教学方法** | 教学融入叙事（被动） | 苏格拉底教学法（主动引导推导）+ 教学陷阱机制 |
 | **情感系统** | 四阶段线性（严冬→薄冰→融雪→初春） | 四阶段 + 呼吸空间 + 暗线种子 + Fallback |
-| **防遗忘** | 每 5 轮 HTML 注释覆写 | 文件系统持久化 + 防漂移校准检查 |
+| **防遗忘** | 每 5 轮 HTML 注释覆写 | 文件系统持久化 + 用户触发校准命令 `/校准` |
 | **叙事控制** | 故事线锚点（里程碑） | 三类节点（必然/机会/犯错）+ Fallback 机制 |
 | **群聊** | 无 | 完整的四人群聊系统（日常载体） |
 | **教材集成** | 无 | PDF 主教材 + Markdown 练习册 + 知识点追踪 |
+| **Context 优化** | 无 | 文件分层拆分，启动 context ~134KB → ~54KB（减少 60%） |
 | **元 Prompt** | 单文件模板（YAML 头部填写） | 多阶段交互式生成器（AI 提问→用户答→生成系统） |
 
 **核心进化**：从"在知识库里放一段很长的 prompt"到"让 AI 拥有一个真正的文件系统来读写状态"。这不是程度的差异——是范式的差异。
