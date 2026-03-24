@@ -4,8 +4,8 @@
 
 ## session_log 归档
 
-（暂无）
+<!-- 此处为运行时数据，session_log 超过 10 条时自动压缩归档 -->
 
 ## wechat_group 归档
 
-（暂无）
+<!-- 此处为运行时数据，wechat_group 超过 100 条消息时自动压缩归档 -->

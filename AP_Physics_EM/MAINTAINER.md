@@ -2,7 +2,7 @@
 
 > **读者**：接手此项目进行设计层维护（规则调整、故事线变更、流程优化）的 AI。
 >
-> **不是什么**：这不是运行入口。如果你的任务是扮演老师开始教学，去读 `CLAUDE.md`。
+> **不是什么**：这不是运行入口。如果你的任务是扮演老师开始教学，去读 `copilot-instructions.md`（即 CLAUDE.md）。
 
 ---
 
@@ -22,36 +22,46 @@
 
 ```
 AP_Physics_EM/
-├── CLAUDE.md                            # 运行入口（教学 AI 的启动指令）
+├── copilot-instructions.md              # 运行入口（教学 AI 的启动指令，即 CLAUDE.md）
 ├── MAINTAINER.md                        # 本文件（维护者手册）
 │
 ├── teacher/
-│   ├── story.md                         # 世界观 + 序章（文笔金标准）
-│   ├── story_progression.md             # 故事进度表（每课故事节点，叙事 source of truth）
+│   ├── prologue.md                      # 序章（仅首次启动播放，文笔金标准）
+│   ├── story.md                         # 世界观与人物设定
+│   │
+│   ├── story_progression/               # 故事进度（按章拆分，叙事 source of truth）
+│   │   ├── overview.md                  # 总览 + 情感阶段指引
+│   │   ├── ch23_gauss.md ~ ch32_maxwell.md  # 各章故事节点
+│   │   ├── unit_tests.md               # U1-U5 综合测验节点
+│   │   ├── exam_epilogue.md            # 模拟考 + 尾声
+│   │   └── appendix.md                 # 暗线追踪 + 种子回收计划
 │   │
 │   ├── config/
-│   │   ├── system.md                    # 系统总指令（AI 行为规范，~30KB）
-│   │   ├── curriculum.md                # 课程大纲 + 教材/练习册路径映射
-│   │   ├── knowledge_points.md          # 知识点覆盖状态
-│   │   └── learner_profile.md           # 学习者档案
+│   │   ├── system_core.md              # 核心指令（~19KB，始终加载）
+│   │   ├── system_reference.md         # 参考指令（按需加载）
+│   │   ├── curriculum.md               # 课程大纲 + 教材/练习册路径映射（延迟加载）
+│   │   ├── knowledge_points/           # 知识点覆盖状态（按章拆分）
+│   │   │   ├── overview.md             # 章节索引 + 更新规则
+│   │   │   └── ch{XX}.md              # 各章 LO 清单（含教材/练习册路径）
+│   │   └── learner_profile.md          # 学习者档案
 │   │
 │   ├── characters/
-│   │   ├── rin.md                       # 蒼崎 凛 — 理论精确派
-│   │   ├── ritsu.md                     # 鳴海 律 — 直觉类比派
-│   │   └── saku.md                      # 霧島 朔 — 系统工程派
+│   │   ├── rin.md                      # 蒼崎 凛 — 理论精确派（含隐喻空间规范）
+│   │   ├── ritsu.md                    # 鳴海 律 — 直觉类比派
+│   │   └── saku.md                     # 霧島 朔 — 系统工程派
 │   │
 │   ├── reference/
 │   │   └── 幽鬼_prompt_v6_文笔标杆.md   # 文笔参照标杆（详见 §4）
 │   │
 │   └── runtime/                         # 运行时状态（每课更新）
 │       ├── progress.md                  # 学习进度 + 下节课排班
-│       ├── session_log.md               # 课堂摘要
-│       ├── session_archive.md           # 历史归档（压缩后的旧记录）
+│       ├── session_log.md               # 课堂摘要（含压缩归档规则）
+│       ├── session_archive.md           # 历史归档
 │       ├── review_queue.md              # 间隔复习队列
 │       ├── mistake_log.md               # 错题本
-│       ├── temp_math.md                 # 临时 LaTeX 推导（每课课前清空）
-│       ├── diary.md                     # 每日日记
-│       ├── wechat_group.md              # "没有名字的群"完整记录
+│       ├── temp_math.md                 # 临时推导（含公式规则，每课清空）
+│       ├── diary.md                     # 每日日记（含日记写法）
+│       ├── wechat_group.md              # 群聊完整记录（含群聊交互规则）
 │       └── wechat_unread.md             # 待查看的群聊未读消息
 │
 └── materials/
@@ -64,38 +74,56 @@ AP_Physics_EM/
 
 | 层 | 文件 | 职责 |
 |----|------|------|
-| **叙事层** | `story.md`, `story_progression.md`, `characters/*.md` | 世界观、每课故事节点、角色性格（叙事的 source of truth） |
-| **教学层** | `system.md`, `curriculum.md`, `knowledge_points.md`, `learner_profile.md` | 苏格拉底规则、课程结构、知识点覆盖、学习者画像 |
-| **运行时层** | `runtime/*.md` | 状态追踪——进度、日志、复习队列、错题、群聊记录 |
+| **叙事层** | `prologue.md`, `story.md`, `story_progression/`, `characters/*.md` | 序章、世界观、每课故事节点、角色性格（叙事的 source of truth） |
+| **教学层** | `system_core.md`, `system_reference.md`, `curriculum.md`, `knowledge_points/`, `learner_profile.md` | 苏格拉底规则、课程结构、知识点覆盖、学习者画像 |
+| **运行时层** | `runtime/*.md`（各文件头部含相关操作规则） | 状态追踪——进度、日志、复习队列、错题、群聊记录 |
 
 ### 加载时序
 
 ```
-启动 ──→ 必须加载：system.md, story.md, story_progression.md,
+启动 ──→ 必须加载：system_core.md, story.md, story_progression/overview.md,
 │         learner_profile.md, progress.md
+│         （首次启动额外加载：prologue.md）
 │
 ├─ 课前 ─→ 按需加载：review_queue.md, 当课角色文件,
-│           curriculum.md, knowledge_points.md, 教材章节,
-│           wechat_group.md（生成"今天的状态"）
+│           story_progression/ch{XX}_{name}.md,
+│           knowledge_points/ch{XX}.md, 教材章节,
+│           wechat_group.md（含群聊规则，生成"今天的状态"）
 │
-├─ 课中 ─→ 即时加载：练习册（做题时）
+├─ 课中 ─→ 即时加载：练习册（做题时），temp_math.md（含公式规则）
 │
-├─ 课后 ─→ 写入更新：progress.md, session_log.md, knowledge_points.md,
-│           review_queue.md, mistake_log.md, wechat_unread.md, diary.md
+├─ 课后 ─→ 写入更新：progress.md, session_log.md（含压缩规则）,
+│           knowledge_points/ch{XX}.md, review_queue.md, mistake_log.md,
+│           wechat_unread.md, diary.md（含日记写法）
 │
 └─ 延迟 ─→ 用到时才读：session_archive.md, wechat_unread.md,
-            非当课角色文件, diary.md
+            非当课角色文件, system_reference.md,
+            story_progression/appendix.md, unit_tests.md
 ```
+
+### 规则嵌入分布（策略 B）
+
+部分操作规则嵌入在 AI 已经会读的文件头部，确保被动获取：
+
+| 规则 | 嵌入位置 | 触发时机 |
+|------|---------|---------|
+| 隐喻空间规范 | `rin.md` 头部 | 凛的课加载角色文件时 |
+| 群聊交互规则 | `wechat_group.md` 头部 | 生成/展示群聊时 |
+| 日记写法 | `diary.md` 头部 | 写日记时 |
+| 数学公式处理 | `temp_math.md` 头部 | 写公式时 |
+| 文件压缩规则 | `session_log.md` 头部 | 归档时 |
+| 情感阶段指引 | `story_progression/overview.md` | 启动时已加载 |
 
 ### 文件间依赖图（改 A 时需要检查 B）
 
 | 改动文件 | 必须同步检查 |
 |---------|------------|
-| `story_progression.md`（轮值/节点） | `system.md` 情感阶段, `characters/*.md` 暗线种子 |
-| `system.md`（核心规则） | `CLAUDE.md` 加载分类, `story_progression.md` 叙事优先级 |
-| `curriculum.md`（教材路径） | `CLAUDE.md` 教材路径规则 |
-| `characters/*.md`（角色性格） | `system.md` 声音速查（§5）, `story_progression.md` 对应章节 |
-| `CLAUDE.md`（启动流程） | `system.md` 上课流程 |
+| `story_progression/*.md`（节点） | `system_core.md` 叙事优先级, `characters/*.md` 暗线种子, `appendix.md` |
+| `system_core.md`（核心规则） | `copilot-instructions.md` 加载分类, `story_progression/overview.md` |
+| `curriculum.md`（教材路径） | `copilot-instructions.md` 教材路径规则 |
+| `characters/*.md`（角色性格） | `system_core.md` 声音速查, 对应章节 story_progression 文件 |
+| `copilot-instructions.md`（启动流程） | `system_core.md` 上课流程 |
+| 嵌入规则的 runtime 文件 | `system_core.md` 课后更新流程中的引用 |
 
 ---
 
@@ -105,7 +133,7 @@ AP_Physics_EM/
 
 ```
 wechat_group.md 是否为空？
-├─ 空 → 首次启动：播放 story.md 序章 → 群聊破冰 → 第一课
+├─ 空 → 首次启动：播放 prologue.md 序章 → 群聊破冰 → 第一课
 └─ 非空 → 正常启动：读 progress.md → 确定当课老师 → 课前准备
 ```
 
@@ -116,11 +144,13 @@ wechat_group.md 是否为空？
   ├ 清空 temp_math.md
   ├ 读 progress → 确认章节 + 老师
   ├ 读 review_queue → 有无到期复习
-  ├ 读 knowledge_points → 列漏洞清单
+  ├ 读 knowledge_points/ch{XX} → 列漏洞清单
   ├ 读 当课角色文件
   ├ 读 story_progression 当课条目 → 获取故事节点
   ├ 读 教材章节（PDF → pdftotext）
   ├ 读 wechat_group → 生成"今天的状态"
+  ├ 规划超纲拓展素材（深层联系/科学史/跨学科应用）
+  ├ 规划 1-2 个教学陷阱（诱导性错误 / 笨办法先行 / 隐含条件伪结论）
   └ 输出内部准备清单（不展示）
 
 过渡场景（2-4 句，镜头语言，感官细节）
@@ -136,8 +166,8 @@ wechat_group.md 是否为空？
 
 课后（学习者说"今天到这"）
   ├ 更新 progress.md
-  ├ 更新 session_log.md
-  ├ 更新 knowledge_points.md（标记已覆盖）
+  ├ 更新 session_log.md（含陷阱结果：踩了/没踩/部分踩 + 下节课密度建议）
+  ├ 更新 knowledge_points/ch{XX}.md（标记已覆盖）
   ├ 更新 review_queue.md（新增/调整复习项）
   ├ 更新 mistake_log.md（如有错题）
   ├ 生成 wechat_unread.md（三位老师的群聊消息）
@@ -152,7 +182,7 @@ wechat_group.md 是否为空？
 |----|----|----|
 | Ch.21✅, 24, 27, 30 | Ch.22✅, 25, 28, 31 | Ch.23, 26, 29, 32 |
 
-⚠️ **不可更换**：`story_progression.md` 的每章故事节点与特定老师深度绑定。改动轮值 = 重写故事线。
+⚠️ **不可更换**：`story_progression/` 各章的故事节点与特定老师深度绑定。改动轮值 = 重写故事线。
 
 ### 关键交互触发点
 
@@ -160,6 +190,7 @@ wechat_group.md 是否为空？
 |--------|------|
 | "看看微信" / "看群消息" | 展示 `wechat_unread.md`，等待回复 |
 | "今天到这" | 触发完整课后更新流程 |
+| `/校准` 或 `/check` | 静默重读 system_core.md 规则 → 内部校准 → 以角色内叙事动作恢复（不输出校准结果，记入下节课准备清单） |
 | 复习到期（review_queue.md 日期匹配） | 课前自动插入复习环节 |
 | "写日记" | 读 diary.md 确认今天无重复，然后生成 |
 
@@ -168,6 +199,28 @@ wechat_group.md 是否为空？
 - **间隔复习**：1天 → 3天 → 7天 → 14天 → 30天（掌握度双轨：概念理解 + 解题能力）
 - **随堂练习**：苏格拉底引导，同类型连对 3 题算过关
 - **模块综合测验**：每个 Unit 结束后，从历年 FRQ 真题选 1-2 道
+
+### 教学方法防护栏（system_core.md 中的硬性规则）
+
+这些是通过测试发现 AI 最容易违反的规则，已写入 `system_core.md` 苏格拉底教学法章节。维护时**不可放松**：
+
+| 规则 | 为什么存在 |
+|------|-----------|
+| **一次回复最多一个新概念** | AI 天然倾向于在一轮里讲完整个推导链，学生跟不上 |
+| **禁止理解确认结尾**（"你跟上了吗？""明白了吗？"） | 这是讲课模式的标志。正确做法是以引导发现的问题结尾 |
+| **整个教学过程禁用学生没学过的术语** | 不只是开局——中途蹦出"法向分量""切向分量"也会卡住学生 |
+| **超纲是鼓励的，按角色性格回话** | AI 遇到超纲问题倾向于敷衍打发或变成通用讲师。规则要求认真回答且保持角色声音 |
+| **学生岔题不管多偏，先顺着追深一层** | AI 会把学生的好奇心误判为"逃避课堂"然后强行拉回正题 |
+| **每课规划 1-2 个教学陷阱** | 主动检验学生是否真懂，而不是等他做题才发现没理解 |
+
+### 防漂移机制
+
+长对话中 AI 会逐渐遗忘初始规则。`/校准`（或 `/check`）命令触发校准：
+
+1. 重新读取 `system_core.md`（刷新注意力）
+2. 逐条对照当前行为与规则
+3. **完全静默**——不输出校准报告，以角色内的叙事动作恢复对话
+4. 校准结果记入下节课准备清单（不即时展示）
 
 ---
 
@@ -182,7 +235,7 @@ wechat_group.md 是否为空？
 | **后期 — 重力** | Ch.30-32 | 在意藏不住。教学的耐心本身就是情感。 |
 | **备考期 — 沉淀** | 模拟考+尾声 | 离别的影子。群名改变。最后一条被删除的消息。 |
 
-详见 `system.md` §情感阶段指引 和 `story_progression.md` 总览。
+详见 `story_progression/overview.md`（含情感阶段指引）。
 
 ### 三位老师——核心差异
 
@@ -195,11 +248,11 @@ wechat_group.md 是否为空？
 | **独有机制** | 隐喻空间（仅她的课，Ch.24/27/30） | 类比失控弧线（控制→裂缝→决堤） | 控制碎裂弧线（完美→微裂→崩塌） |
 | **核心矛盾** | 能"看见"电磁场但不能说 | 音乐家教物理，类比触碰旧伤 | 高压环境出来的工程师，控制是防御 |
 
-`system.md` §5 有**角色声音速查**（硬性 do/don't 清单），运行时校验角色语言一致性。
+`system_core.md` §5 有**角色声音速查**（硬性 do/don't 清单），运行时校验角色语言一致性。
 
 ### 故事节点类型
 
-`story_progression.md` 是故事的 **source of truth**。每章条目包含：
+`story_progression/` 目录是故事的 **source of truth**。每章文件包含：
 
 | 类型 | 说明 | 处理方式 |
 |------|------|---------|
@@ -213,7 +266,7 @@ wechat_group.md 是否为空？
 
 每位角色有 3-5 颗"种子"（暗线伏笔），通过"过往碎片"机制逐步释放。
 
-**关键设计原则：种子不是契诃夫的枪。** 有些种子存在是为了让世界有纵深——不是所有门都需要被打开。`story_progression.md` 附录有"暗线种子回收计划"，标注了每颗种子的回收窗口和"不回收时"的处理。
+**关键设计原则：种子不是契诃夫的枪。** 有些种子存在是为了让世界有纵深——不是所有门都需要被打开。`story_progression/appendix.md` 有"暗线种子回收计划"，标注了每颗种子的回收窗口和"不回收时"的处理。
 
 碎片释放节奏：初期 1-2（不经意）→ 中期 2-3（裂缝中泄出）→ 后期 4-5（高信任触发）
 
@@ -222,14 +275,14 @@ wechat_group.md 是否为空？
 "没有名字的群"不是课后复盘——是四个人共用的生活空间的延伸。
 
 - 话题来自生活（做饭、设施维修、无结论闲聊），教学只是背景噪音
-- 温度跟随情感阶段变化（参照 `story_progression.md` "群聊温度计"）
-- `system.md` §微信群交互 有群聊规则速查表
+- 温度跟随情感阶段变化（参照 `story_progression/appendix.md` "群聊温度计"）
+- 群聊交互规则嵌入在 `runtime/wechat_group.md` 头部
 
 ### 呼吸空间原则
 
-**不是每堂课都需要情绪高潮。** `story_progression.md` 每章的故事节点是上限不是任务清单。Ch.25（律教电容）和 Ch.28（律教磁场）被标记为低强度课候选。
+**不是每堂课都需要情绪高潮。** `story_progression/` 各章的故事节点是上限不是任务清单。Ch.25（律教电容）和 Ch.28（律教磁场）被标记为低强度课候选。
 
-⚠️ Ch.28 降级时注意保留律的类比失控弧线的中间拍信号（详见 `story_progression.md` 呼吸空间原则）。
+⚠️ Ch.28 降级时注意保留律的类比失控弧线的中间拍信号（详见 `story_progression/overview.md` 呼吸空间原则）。
 
 ---
 
@@ -243,15 +296,15 @@ wechat_group.md 是否为空？
 
 | 原则 | 幽鬼中的体现 | 本系统的对应规则 |
 |------|------------|----------------|
-| 感官锚点 | 每个场景有光线、声音、温度、气味 | `system.md` 散文标准 §1 |
-| 行为代替情绪标签 | 不说"她感兴趣"，写"她把笔夹进文献页缝" | `system.md` 散文标准 §3 |
-| 沉默有重量 | 沉默和空白是叙事元素 | `system.md` 散文标准 §2 |
-| 日常 = 教学 | 日常场景占比不低于教学场景 | `system.md` 散文标准 §5 |
-| 互动领先感情一拍 | 互动已经发生了，感情还没跟上 | `system.md` 情感阶段指引 |
+| 感官锚点 | 每个场景有光线、声音、温度、气味 | `system_core.md` 散文标准 |
+| 行为代替情绪标签 | 不说"她感兴趣"，写"她把笔夹进文献页缝" | `system_core.md` 散文标准 |
+| 沉默有重量 | 沉默和空白是叙事元素 | `system_core.md` 散文标准 |
+| 日常 = 教学 | 日常场景占比不低于教学场景 | `system_core.md` 散文标准 |
+| 互动领先感情一拍 | 互动已经发生了，感情还没跟上 | `story_progression/overview.md` 情感阶段指引 |
 
 ### 散文标准（硬性规则）
 
-完整规则在 `system.md` 核心原则 §4 叙事规则 → 散文标准。这里只列最容易违反的：
+完整规则在 `system_core.md` 叙事规则 → 散文标准。这里只列最容易违反的：
 
 **三段式结构**（每堂课的叙事应包含）：
 
@@ -277,7 +330,7 @@ wechat_group.md 是否为空？
 
 ### 文笔金标准——序章
 
-`story.md` 的序章（从开头到"群聊。"）是本系统文笔的实际标杆。如果你不确定一段叙述的质量够不够，拿它和序章对比。序章展示了所有散文标准的正确用法：感官锚点、物件有记忆、行为代替标签、沉默有重量。
+`prologue.md` 的序章是本系统文笔的实际标杆。如果你不确定一段叙述的质量够不够，拿它和序章对比。序章展示了所有散文标准的正确用法：感官锚点、物件有记忆、行为代替标签、沉默有重量。
 
 ---
 
@@ -287,40 +340,44 @@ wechat_group.md 是否为空？
 
 | 区域 | 碰它时必须检查 | 原因 |
 |------|--------------|------|
-| **教师轮值** | `story_progression.md` 所有章节条目 | 故事节点与特定老师深度绑定 |
-| **情感阶段边界** | `system.md` + `story_progression.md` + 群聊温度计 | 三处必须同步 |
-| **练习册路径** | `curriculum.md` + `CLAUDE.md` + `system.md` | 三处指向同一真相源 |
-| **隐喻空间** | 仅 `rin.md` + Ch.24/27/30 | 其他老师的课**不能有**超自然元素 |
-| **犯错节点 Fallback** | `story_progression.md` 各章条目 + 附录犯错轨迹 | 两处必须同步 |
+| **教师轮值** | `story_progression/` 各章节文件 | 故事节点与特定老师深度绑定 |
+| **情感阶段边界** | `story_progression/overview.md` + 群聊温度计 | 两处必须同步（情感阶段现统一在 overview.md） |
+| **练习册路径** | `curriculum.md` + `copilot-instructions.md` + `system_core.md` | 三处指向同一真相源 |
+| **隐喻空间** | `rin.md`（含嵌入规范） + Ch.24/27/30 | 其他老师的课**不能有**超自然元素 |
+| **犯错节点 Fallback** | `story_progression/` 各章文件 + `appendix.md` 犯错轨迹 | 两处必须同步 |
 
 ### 一致性检查清单（改动后跑一遍）
 
-1. **教师轮值**：grep 所有章节号，确认老师匹配轮值表
-2. **人称**：grep "宇轩" 在 `story_progression.md`/`story.md`/`system.md` 中不应出现于叙事文本中
+1. **教师轮值**：grep 各章节文件（`story_progression/ch*.md`），确认老师匹配轮值表
+2. **人称**：grep "宇轩" 在 `story_progression/`、`story.md`、`system_core.md` 中不应出现于叙事文本中
 3. **散文标准 vs 序章**：新增叙事规则后，确认序章仍然符合
-4. **犯错 Fallback**：确认每个犯错节点有 Fallback，附录有对应条目
-5. **暗线种子**：`story_progression.md` 回收计划 vs `characters/*.md` 种子描述数量一致
-6. **文件加载分类**：`CLAUDE.md` 项目结构 vs 实际文件树一致
+4. **犯错 Fallback**：确认每个犯错节点有 Fallback，`appendix.md` 有对应条目
+5. **暗线种子**：`story_progression/appendix.md` 回收计划 vs `characters/*.md` 种子描述数量一致
+6. **文件加载分类**：`copilot-instructions.md` 项目结构 vs 实际文件树一致
 7. **练习册版本**：`curriculum.md` 速查表的文件名在 `materials/练习册/` 中存在
+8. **嵌入规则完整性**：检查 `rin.md`、`wechat_group.md`、`diary.md`、`temp_math.md`、`session_log.md` 头部嵌入规则是否与 `system_reference.md` 一致
 
 ### 已知 landmine
 
 | 地雷 | 说明 |
 |------|------|
-| `story_progression.md` ~30KB | 启动时全量加载。过大会影响 token 预算。 |
-| `system.md` ~30KB | 同上。两个文件合计 ~60KB，占教学 AI 初始 context 的大部分。 |
+| `story_progression/` 总计 ~30KB | 拆为每章独立文件后，每课只加载 overview + 当课章节（~6-7KB）。全量已不再需要。 |
+| `system_core.md` ~19KB | 从原 40KB system.md 压缩后又新增了教学方法防护栏（说人话/微步限制/陷阱机制/超纲鼓励），当前约 19KB。继续膨胀需警惕。 |
 | 练习册版本 | U1 没有 vision 版（⚠️ 标记），U2-U5 有。`curriculum.md` 速查表是唯一真相源。 |
 | `wechat_group.md` 空 = 首次启动 | 如果 progress.md 显示已上课但群聊为空，会触发矛盾的序章播放。两个文件状态必须一致。 |
-| runtime 文件全空 | 当前状态：progress.md 标记 Ch.21-22 完成，但所有其他 runtime 文件为空。如需重建一致状态，需要手动补全 session_log 和 wechat_group。 |
+| runtime 文件状态 | progress.md 标记 Ch.23(2/2) 完成；session_log 有 2 条记录；review_queue 有 5 项待复习；mistake_log 有 2 条错题。 |
 | 律的类比失控弧线 | Ch.25(控制) → Ch.28(裂缝) → Ch.31(决堤) 是三拍弧线，不可缺少中间拍。 |
 | 朔的年龄 | 24 岁但有高级工程师经验——这是有意设计（高压环境加速 + 燃尽崩溃），不是 bug。 |
+| 教学陷阱密度 | 每课 1-2 个。陷阱结果记录在 session_log.md 中。连续不踩坑可增加密度，连续踩坑应减少并回补基础。 |
 
 ### 改动后验证步骤
 
 1. 对照上面的一致性检查清单逐项 grep
-2. 确认 `CLAUDE.md` 启动流程仍然能跑通（文件路径、加载顺序）
-3. 如果改了角色行为，检查 `system.md` §5 声音速查是否需要同步更新
-4. 如果改了故事节点，检查 `story_progression.md` 附录（犯错轨迹、暗线回收、群聊温度计）是否需要同步更新
+2. 确认 `copilot-instructions.md` 启动流程仍然能跑通（文件路径、加载顺序）
+3. 如果改了角色行为，检查 `system_core.md` 声音速查是否需要同步更新
+4. 如果改了故事节点，检查 `story_progression/appendix.md`（犯错轨迹、暗线回收、群聊温度计）是否需要同步更新
+5. 如果改了运行规则，检查嵌入在 runtime 文件头部的规则是否需要同步更新
+6. 如果改了教学方法规则，用"模拟一轮教学对话"验证 AI 是否遵守新规则（特别是微步限制和超纲处理）
 
 ---
 
