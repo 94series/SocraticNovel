@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>白板</title>
+
+  <!-- KaTeX：数学公式渲染 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+
+  <!-- Mermaid：流程图/示意图渲染 -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+
+  <style>
+    /* ========== 基础 ========== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1e2a1e;
+      min-height: 100vh;
+      padding: 0;
+      margin: 0;
+      font-family: "LXGW WenKai", "Noto Serif SC", "Source Han Serif SC", serif;
+    }
+
+    /* ========== 白板框架 ========== */
+    .board-frame {
+      max-width: 960px;
+      margin: 24px auto;
+      background: #2d4a2d;
+      border: 12px solid #5c3a1e;
+      border-radius: 6px;
+      box-shadow:
+        inset 0 0 40px rgba(0,0,0,0.3),
+        0 8px 32px rgba(0,0,0,0.5);
+      min-height: 80vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 木框纹理感 */
+    .board-frame::before {
+      content: '';
+      position: absolute;
+      inset: -12px;
+      border: 12px solid transparent;
+      border-image: repeating-linear-gradient(
+        90deg,
+        #5c3a1e 0px, #6b4423 3px, #4a2e15 6px
+      ) 12;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .board {
+      padding: 32px 40px;
+      min-height: 70vh;
+    }
+
+    /* ========== 粉笔文字效果 ========== */
+    .board, .board * {
+      color: #e8e4d9;
+    }
+
+    /* ========== 内容块 ========== */
+    .item {
+      margin-bottom: 24px;
+      padding: 8px 0;
+      animation: chalk-in 0.3s ease-out;
+    }
+
+    @keyframes chalk-in {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========== 数学公式 ========== */
+    .math-block {
+      font-size: 1.3em;
+      padding: 12px 0;
+      text-align: center;
+      line-height: 1.8;
+    }
+
+    .math-inline {
+      font-size: 1.05em;
+    }
+
+    /* KaTeX 颜色覆盖——粉笔白 */
+    .katex { color: #f0ece0 !important; }
+    .katex .mord, .katex .mbin, .katex .mrel,
+    .katex .mopen, .katex .mclose, .katex .mpunct,
+    .katex .mop { color: #f0ece0 !important; }
+
+    /* ========== 文字 ========== */
+    .text {
+      font-size: 1.1em;
+      line-height: 1.7;
+      letter-spacing: 0.02em;
+    }
+
+    .label {
+      font-size: 0.85em;
+      color: #a8c4a0;
+      margin-top: 4px;
+      padding-left: 2px;
+      font-style: italic;
+    }
+
+    .chalk-highlight {
+      background: rgba(255, 220, 100, 0.15);
+      color: #ffe082;
+      padding: 1px 6px;
+      border-radius: 2px;
+      border-bottom: 1.5px solid rgba(255, 220, 100, 0.4);
+    }
+
+    /* ========== 并排布局 ========== */
+    .flex-row {
+      display: flex;
+      gap: 32px;
+      align-items: flex-start;
+    }
+
+    .col {
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* ========== 分隔线 ========== */
+    .board-divider {
+      border: none;
+      border-top: 1.5px dashed rgba(232, 228, 217, 0.25);
+      margin: 20px 0;
+    }
+
+    /* ========== Mermaid 图表 ========== */
+    .mermaid {
+      text-align: center;
+      padding: 16px 0;
+    }
+
+    /* Mermaid 暗色适配 */
+    .mermaid svg {
+      max-width: 100%;
+    }
+
+    /* ========== SVG 手绘风格 ========== */
+    .sketch {
+      display: block;
+      margin: 8px auto;
+    }
+
+    .sketch .axis {
+      stroke: #a8c4a0;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+    }
+
+    .sketch .vector {
+      stroke: #ffe082;
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .sketch .vector-head {
+      fill: #ffe082;
+    }
+
+    .sketch .svg-label {
+      fill: #f0ece0;
+      font-size: 16px;
+      font-style: italic;
+      font-family: "LXGW WenKai", serif;
+    }
+
+    .sketch .dashed {
+      stroke-dasharray: 6 4;
+    }
+
+    .sketch .dim {
+      stroke: rgba(168, 196, 160, 0.5);
+      stroke-width: 1;
+    }
+
+    .sketch .accent {
+      stroke: #ff8a80;
+      stroke-width: 2;
+    }
+
+    .sketch .accent-fill {
+      fill: rgba(255, 138, 128, 0.2);
+      stroke: #ff8a80;
+      stroke-width: 1.5;
+    }
+
+    /* ========== 步骤/推导链 ========== */
+    .derivation {
+      border-left: 2px solid rgba(168, 196, 160, 0.3);
+      padding-left: 16px;
+      margin-left: 8px;
+    }
+
+    .step {
+      margin-bottom: 12px;
+    }
+
+    .step-num {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      line-height: 22px;
+      text-align: center;
+      border-radius: 50%;
+      border: 1px solid rgba(168, 196, 160, 0.4);
+      font-size: 0.75em;
+      color: #a8c4a0;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    /* ========== 角落粉笔灰效果 ========== */
+    .board-frame::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(232, 228, 217, 0.08) 20%,
+        rgba(232, 228, 217, 0.12) 40%,
+        rgba(232, 228, 217, 0.06) 70%,
+        transparent 100%
+      );
+      z-index: 5;
+    }
+
+    /* ========== 响应式 ========== */
+    @media (max-width: 640px) {
+      .board-frame { margin: 8px; border-width: 8px; }
+      .board { padding: 20px 16px; }
+      .flex-row { flex-direction: column; gap: 16px; }
+      .math-block { font-size: 1.1em; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="board-frame">
+  <div class="board" id="board">
+    <!-- ========== 白板内容开始 ========== -->
+
+    <!-- __BOARD_CURSOR__ -->
+    <!-- ========== 白板内容结束 ========== -->
+  </div>
+</div>
+
+<script>
+  // ===== 初始化 =====
+
+  // Mermaid 暗色主题
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#2d4a2d',
+      primaryColor: '#3d6b3d',
+      primaryBorderColor: '#a8c4a0',
+      primaryTextColor: '#f0ece0',
+      secondaryColor: '#4a6b4a',
+      tertiaryColor: '#2d4a2d',
+      lineColor: '#a8c4a0',
+      textColor: '#f0ece0',
+      mainBkg: '#3d6b3d',
+      nodeBorder: '#a8c4a0',
+      clusterBkg: '#2d4a2d',
+      titleColor: '#f0ece0',
+      edgeLabelBackground: '#2d4a2d',
+    },
+    flowchart: { curve: 'basis', padding: 16 },
+    fontSize: 14,
+  });
+
+  // KaTeX 自动渲染
+  document.addEventListener("DOMContentLoaded", function() {
+    if (typeof renderMathInElement !== 'undefined') {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$',  right: '$',  display: false },
+        ],
+        throwOnError: false,
+      });
+    }
+  });
+
+  // ===== 自动重渲染（Live Server 刷新后触发） =====
+  // Live Server 会在文件变化时自动刷新整个页面，
+  // 所以 KaTeX 和 Mermaid 会自然重新初始化。
+  // 如果用 Live Preview（内嵌面板），行为相同。
+
+  // ===== 备用：无 Live Server 时的轮询刷新 =====
+  // 取消下面的注释可启用每 2 秒自动刷新（仅作为兜底方案）
+  // setTimeout(function poll() {
+  //   fetch(location.href, { cache: 'no-store' })
+  //     .then(r => r.text())
+  //     .then(html => {
+  //       if (html !== document.documentElement.outerHTML) {
+  //         location.reload();
+  //       }
+  //     })
+  //     .catch(() => {});
+  //   setTimeout(poll, 2000);
+  // }, 2000);
+</script>
+
+</body>
+</html>
